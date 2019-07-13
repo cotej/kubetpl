@@ -47,14 +47,14 @@ func (t ShellTemplate) Render(data map[string]interface{}) (res []byte, err erro
 			return nil, err
 		}
 	}
-	r, err := envsubst(string(t.content), data, t.ignoreUnset)
+	r, err := Envsubst(string(t.content), data, t.ignoreUnset)
 	if err != nil {
 		return nil, err
 	}
 	return []byte(r), nil
 }
 
-func envsubst(value string, env map[string]interface{}, ignoreUnset bool) (res string, err error) {
+func Envsubst(value string, env map[string]interface{}, ignoreUnset bool) (res string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			if _, ok := r.(runtime.Error); ok {

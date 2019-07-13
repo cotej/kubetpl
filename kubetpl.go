@@ -53,7 +53,7 @@ func main() {
 	}
 	var syntax, chroot string
 	var configFiles, configKeyValuePairs, freezeRefs, freezeList []string
-	var allowFsAccess, ignoreUnset, freeze bool
+	var allowFsAccess, ignoreUnset, freeze, expandConfigValues bool
 	rootCmd := &cobra.Command{
 		Use:  "kubetpl",
 		Long: "Kubernetes templates made easy (https://github.com/shyiko/kubetpl).",
@@ -78,7 +78,7 @@ func main() {
 			if len(args) == 0 {
 				return pflag.ErrHelp
 			}
-			config, err := readConfigFiles(configFiles...)
+			config, err := readConfigFiles(configFiles, expandConfigValues, ignoreUnset)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -188,6 +188,7 @@ func main() {
 			"(access to anything outside of --chroot will denied)")
 	renderCmd.Flags().BoolVar(&allowFsAccess, "allow-fs-access", false,
 		`Shorthand for --chroot=<directory containing template>`)
+	renderCmd.Flags().BoolVar(&expandConfigValues, "expand-config", false, "Performs expansion of OS environment variables in config files before feeding to the template")
 	renderCmd.Flags().StringP("output", "o", "", "Redirect output to a file")
 	rootCmd.AddCommand(renderCmd)
 	completionCmd := &cobra.Command{
@@ -491,10 +492,10 @@ func newTemplate(file string, flavor string, ignoreUnset bool) (engine.Template,
 	return t, directives, err
 }
 
-func readConfigFiles(path ...string) (map[string]interface{}, error) {
+func readConfigFiles(path []string, expandConfigValues bool, ignoreUnset bool) (map[string]interface{}, error) {
 	config := make(map[string]interface{})
 	for _, path := range path {
-		cfg, err := readConfigFile(path)
+		cfg, err := readConfigFile(path, expandConfigValues, ignoreUnset)
 		if err != nil {
 			return nil, err
 		}
@@ -505,11 +506,19 @@ func readConfigFiles(path ...string) (map[string]interface{}, error) {
 	return config, nil
 }
 
-func readConfigFile(path string) (map[string]interface{}, error) {
+func readConfigFile(path string, expandConfigValues bool, ignoreUnset bool) (map[string]interface{}, error) {
 	data, err := readFile(path)
 	if err != nil {
 		return nil, err
 	}
+	if expandConfigValues {
+		content, err := engine.Envsubst(string(data), loadOsEnv(), ignoreUnset)
+		if err != nil {
+			log.Panicf("Failed to expand config file '%s': %s", path, err)
+		}
+		data = []byte(content)
+	}
+
 	if hasExtension(path, ".env") {
 		return parseDotEnv(data)
 	}
@@ -549,6 +558,17 @@ func readFile(path string) ([]byte, error) {
 		return ioutil.ReadAll(res.Body)
 	}
 	return ioutil.ReadFile(path)
+}
+
+func loadOsEnv() map[string]interface{} {
+	osenv := map[string]interface{}{}
+	for _, line := range os.Environ() {
+		chunks := strings.SplitN(line, "=", 2)
+		if len(chunks) == 2 && chunks[0] != "" && chunks[1] != "" {
+			osenv[chunks[0]] = chunks[1]
+		}
+	}
+	return osenv
 }
 
 func parseYAML(data []byte) (map[string]interface{}, error) {
