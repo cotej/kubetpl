@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/shyiko/kubetpl/dotenv"
+	"github.com/cotej/kubetpl/dotenv"
 	"strings"
 )
 

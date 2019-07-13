@@ -1,4 +1,4 @@
-package: github.com/shyiko/kubetpl
+package: github.com/cotej/kubetpl
 import:
 - package: github.com/Masterminds/sprig
 - package: github.com/Sirupsen/logrus

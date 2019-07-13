@@ -3,3 +3,7 @@ coverage.html
 release
 vendor
 /kubetpl
+
+# IntelliJ/GoLand
+.idea/**
+*.iml

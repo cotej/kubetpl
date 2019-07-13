@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	yamlext "github.com/shyiko/kubetpl/yaml"
+	yamlext "github.com/cotej/kubetpl/yaml"
 	"gopkg.in/yaml.v2"
 	"runtime"
 	"strconv"
